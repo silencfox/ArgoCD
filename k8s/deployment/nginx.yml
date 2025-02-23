@@ -1,30 +1,61 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: nginx-project
+  name: nginx-deployment
 spec:
   type: LoadBalancer
   ports:
-    - port: 80
+    - port: 8090
   selector:
-    app: nginx-project
+    app: nginx-deployment
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: nginx-project
+  name: nginx-deployment
 spec:
-  replicas: 4
+  replicas: 3
   selector:
     matchLabels:
-      app: nginx-project
+      app: nginx-deployment
   template:
     metadata:
       labels:
-        app: nginx-project
+        app: nginx-deployment
     spec:
       containers:
-        - name: nginx
-          image: nginx:1.17.3
-          ports:
-            - containerPort: 80
+      - name: nginx
+        image: nginx:latest
+        ports:
+        - containerPort: 8090
+        livenessProbe:
+          httpGet:
+            path: /                # The path to check for the liveness probe
+            port: 8090               # The port to check on
+          initialDelaySeconds: 15  # Wait this many seconds before starting the probe
+          periodSeconds: 10        # Check the probe every 10 seconds
+        readinessProbe:
+          httpGet:
+            path: /                # The path to check for the readiness probe
+            port: 8090               # The port to check on
+          initialDelaySeconds: 5   # Wait this many seconds before starting the probe
+          periodSeconds: 5         # Check the probe every 5 seconds
+        resources:
+          limits:
+            memory: "256Mi"  # Maximum memory allowed
+            cpu: "200m"       # Maximum CPU allowed (200 milliCPU)
+          requests:
+            memory: "128Mi"  # Initial memory request
+            cpu: "100m"       # Initial CPU request          
+        env:
+        - name: DATABASE_HOST
+          value: db.example.com
+        - name: API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: my-secret
+              key: api-key 
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: my-pvc  # Name of the Persistent Volume Claim              
