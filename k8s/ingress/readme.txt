@@ -1,0 +1,1 @@
+kubectl apply -f example-ingress.yaml
